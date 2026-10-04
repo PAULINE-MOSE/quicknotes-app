@@ -8,22 +8,70 @@ const errorMessage = document.querySelector("#error-message");
 const searchInput = document.querySelector("#search-input");
 
 
-// Starting notes array
-let notes = [];
+// Local storage key
+const NOTES_STORAGE_KEY = "quicknotes-notes";
+
+
+// Load notes from localStorage
+let notes = loadNotes();
+
+
+// Load saved notes
+function loadNotes() {
+  const savedNotes = localStorage.getItem(NOTES_STORAGE_KEY);
+
+  if (savedNotes === null) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(savedNotes);
+  } catch (error) {
+    console.error("Could not load saved notes.", error);
+    return [];
+  }
+}
+
+
+// Save notes to localStorage
+function saveNotes() {
+  localStorage.setItem(
+    NOTES_STORAGE_KEY,
+    JSON.stringify(notes)
+  );
+}
+
+
+// Update note count
+function updateCount() {
+  if (notes.length === 0) {
+    noteCount.textContent = "You have no notes yet.";
+  } else if (notes.length === 1) {
+    noteCount.textContent = "You have 1 note.";
+  } else {
+    noteCount.textContent = `You have ${notes.length} notes.`;
+  }
+}
 
 
 // Render notes on the page
 function render(notesToRender = notes) {
   notesList.replaceChildren();
 
-  if (notesToRender.length === 0 && searchInput.value.trim() !== "") {
-    const emptyMessage = document.createElement("li");
-    emptyMessage.textContent = "No notes match your search.";
-    notesList.appendChild(emptyMessage);
+  if (notesToRender.length === 0) {
+    if (searchInput.value.trim() !== "") {
+      const emptyMessage = document.createElement("li");
+      emptyMessage.textContent = "No notes match your search.";
+      notesList.appendChild(emptyMessage);
+    }
+
+    updateCount();
+    return;
   }
 
   notesToRender.forEach((note) => {
     const listItem = document.createElement("li");
+
     listItem.classList.add(
       "note-card",
       `category-${note.category}`
@@ -56,18 +104,6 @@ function render(notesToRender = notes) {
   });
 
   updateCount();
-}
-
-
-// Update note count
-function updateCount() {
-  if (notes.length === 0) {
-    noteCount.textContent = "You have no notes yet.";
-  } else if (notes.length === 1) {
-    noteCount.textContent = "You have 1 note.";
-  } else {
-    noteCount.textContent = `You have ${notes.length} notes.`;
-  }
 }
 
 
@@ -104,7 +140,9 @@ noteForm.addEventListener("submit", (event) => {
 
   notes.push(newNote);
 
+  saveNotes();
   clearError();
+
   noteInput.value = "";
 
   render();
@@ -121,6 +159,7 @@ notesList.addEventListener("click", (event) => {
 
   notes = notes.filter((note) => note.id !== noteId);
 
+  saveNotes();
   render();
 });
 
@@ -137,5 +176,5 @@ searchInput.addEventListener("input", () => {
 });
 
 
-// Initial render
+// Initial page render
 render();
